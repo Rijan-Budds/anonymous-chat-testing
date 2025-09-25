@@ -1,12 +1,17 @@
 {
-  "name": "testing",
-  "version": "0.1.0",
+  "name": "chat-app",
+  "version": "1.0.0",
+  "description": "Real-time chat application built with Next.js and Server-Sent Events",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "build:analyze": "ANALYZE=true npm run build",
+    "health-check": "curl -f http://localhost:3000/api/health || exit 1",
+    "production": "npm run build && npm run start"
   },
   "dependencies": {
     "react": "19.1.0",
