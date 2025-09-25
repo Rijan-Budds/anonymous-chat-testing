@@ -6,7 +6,7 @@ export default function GroupChat({ username }: { username: string }) {
   const [text, setText] = useState("");
 
   useEffect(() => {
-    const es = new EventSource("/api/group-chat/stream");
+    const es = new EventSource("https://testing-chats.netlify.app/chat");
     es.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       setMessages(prev => [...prev, msg]);
