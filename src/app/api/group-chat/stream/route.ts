@@ -1,4 +1,4 @@
-import { clients, messages, SSEClient, ChatMessage } from "../state";
+import { clients, messages, SSEClient, AnonMessage } from "../state";
 
 export async function GET() {
   let client: SSEClient;
@@ -57,24 +57,34 @@ export async function GET() {
   });
 }
 
-function broadcast(message: ChatMessage) {
+function broadcast(message: AnonMessage) {
   const encoder = new TextEncoder();
   clients.forEach(client => {
-    client.enqueue(encoder.encode(`data: ${JSON.stringify(message)}\n\n`));
+    try {
+      client.enqueue(encoder.encode(`data: ${JSON.stringify(message)}\n\n`));
+    } catch (error) {
+      console.error('Error broadcasting to client:', error);
+      // Remove failed client
+      const index = clients.findIndex(c => c === client);
+      if (index !== -1) {
+        clients.splice(index, 1);
+      }
+    }
   });
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const message: ChatMessage = {
-      user: body.user,
+    const message: AnonMessage = {
       text: body.text,
       timestamp: body.timestamp || Date.now(),
+      color: body.color,
+      id: `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     };
     
-    // Validate message
-    if (!message.user || !message.text?.trim()) {
+    // Validate anonymous message
+    if (!message.text?.trim() || !message.color) {
       return new Response(
         JSON.stringify({ error: "Invalid message format" }),
         { 
@@ -83,6 +93,9 @@ export async function POST(req: Request) {
         }
       );
     }
+    
+    // Sanitize and limit message text
+    message.text = message.text.trim().substring(0, 500);
     
     // Limit message history to prevent memory issues
     if (messages.length >= 1000) {
@@ -93,9 +106,18 @@ export async function POST(req: Request) {
     broadcast(message);
     
     return new Response(
-      JSON.stringify({ success: true, messageId: messages.length - 1 }),
+      JSON.stringify({ 
+        success: true, 
+        messageId: message.id,
+        totalMessages: messages.length 
+      }),
       {
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
       }
     );
   } catch (error) {
