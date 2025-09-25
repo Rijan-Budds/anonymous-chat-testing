@@ -1,4 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Anonymous Chat
+
+A privacy-first, real-time anonymous chat application with premium black & white design.
+
+## Privacy Features
+
+- **No Message History**: New users only see messages sent after they join
+- **Anonymous Identity**: Users identified only by grayscale patterns
+- **Ephemeral Messages**: No permanent storage of conversations
+- **Real-time Only**: Messages exist only while the session is active
 
 ## Getting Started
 

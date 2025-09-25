@@ -14,9 +14,11 @@ export default function AnonymousChat() {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
   const [userColor, setUserColor] = useState<string>("");
+  const [joinTimestamp, setJoinTimestamp] = useState<number>(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [scrollPercentage, setScrollPercentage] = useState(0);
+  const [showJoinNotification, setShowJoinNotification] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -36,10 +38,12 @@ const ANON_PATTERNS = [
 ];
 
 
-  // Generate user pattern on mount
+  // Generate user pattern and set join timestamp on mount
   useEffect(() => {
     const randomPattern = ANON_PATTERNS[Math.floor(Math.random() * ANON_PATTERNS.length)];
+    const joinTime = Date.now();
     setUserColor(randomPattern);
+    setJoinTimestamp(joinTime);
   }, []);
 
   const scrollToBottom = (smooth = true) => {
@@ -101,13 +105,17 @@ const ANON_PATTERNS = [
       es.onopen = () => {
         setIsConnected(true);
         setIsConnecting(false);
+        // Show join notification briefly
+        setShowJoinNotification(true);
+        setTimeout(() => setShowJoinNotification(false), 3000);
       };
 
       es.onmessage = (event) => {
         try {
           const msg: AnonMessage = JSON.parse(event.data);
           // Only add actual chat messages, not connection confirmations
-          if (msg.text && msg.color) {
+          // And only show messages sent after user joined
+          if (msg.text && msg.color && msg.timestamp >= joinTimestamp) {
             setMessages(prev => [...prev, msg]);
           }
         } catch (error) {
@@ -232,7 +240,7 @@ const ANON_PATTERNS = [
           </div>
           <div className="w-px h-4 bg-gray-300"></div>
           <span className="text-xs text-gray-500 uppercase tracking-wider font-light">
-            {messages.length} {messages.length === 1 ? 'Message' : 'Messages'}
+            {messages.length} {messages.length === 1 ? 'Message' : 'Messages'} Since Joining
           </span>
           {messages.length > 0 && (
             <>
@@ -264,9 +272,10 @@ const ANON_PATTERNS = [
             <div className="w-16 h-16 border-2 border-gray-300 mx-auto mb-6 flex items-center justify-center">
               <div className="w-4 h-4 bg-gray-300"></div>
             </div>
-            <p className="text-xl font-light uppercase tracking-wide mb-2">Anonymous Space</p>
+            <p className="text-xl font-light uppercase tracking-wide mb-2">You&apos;ve Joined</p>
             <div className="w-24 h-px bg-gray-300 mx-auto mb-4"></div>
-            <p className="text-sm uppercase tracking-widest font-light">Share thoughts without identity</p>
+            <p className="text-sm uppercase tracking-widest font-light mb-2">Listening for new messages</p>
+            <p className="text-xs text-gray-300 font-light">You&apos;ll only see messages sent after you joined</p>
           </div>
         ) : (
           <div className="p-6 space-y-6">
@@ -313,8 +322,17 @@ const ANON_PATTERNS = [
           </button>
         )}
         
+        {/* Join notification */}
+        {showJoinNotification && (
+          <div className="absolute top-4 left-4 right-4 text-center z-10">
+            <div className="inline-block bg-black text-white px-6 py-3 text-sm uppercase tracking-wider font-light border border-gray-300 shadow-lg">
+              Joined • Only seeing new messages
+            </div>
+          </div>
+        )}
+        
         {/* New message indicator */}
-        {!isAtBottom && messages.length > 0 && (
+        {!isAtBottom && messages.length > 0 && !showJoinNotification && (
           <div className="absolute top-4 left-4 right-4 text-center">
             <div className="inline-block bg-gray-900 text-white px-4 py-2 text-xs uppercase tracking-wider font-light border border-gray-700">
               New messages below
@@ -360,9 +378,9 @@ const ANON_PATTERNS = [
         <div className="flex justify-center items-center space-x-8 text-xs text-gray-400 uppercase tracking-wider font-light mb-3">
           <span>Anonymous</span>
           <div className="w-1 h-1 bg-gray-400"></div>
-          <span>Real-time</span>
+          <span>No History</span>
           <div className="w-1 h-1 bg-gray-400"></div>
-          <span>Ephemeral</span>
+          <span>Private</span>
         </div>
         {messages.length > 3 && (
           <div className="text-center text-xs text-gray-400 font-light">

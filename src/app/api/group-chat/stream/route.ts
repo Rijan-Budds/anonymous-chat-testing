@@ -10,23 +10,17 @@ export async function GET() {
         client = { enqueue: controller.enqueue.bind(controller) };
         clients.push(client);
 
-        // Send connection confirmation
+        // Send connection confirmation only
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ 
             type: 'connection', 
-            message: 'Connected to chat', 
+            message: 'Connected to anonymous chat', 
             timestamp: Date.now() 
           })}\n\n`)
         );
 
-        // Send all previous messages to new client
-        messages.forEach(msg => {
-          try {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(msg)}\n\n`));
-          } catch (error) {
-            console.error("Error sending previous message:", error);
-          }
-        });
+        // DO NOT send historical messages to new users
+        // Users only see messages sent after they join
       } catch (error) {
         console.error("Error starting SSE stream:", error);
         controller.error(error);
